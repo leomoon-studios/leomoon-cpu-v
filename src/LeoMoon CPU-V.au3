@@ -1,12 +1,12 @@
 #NoTrayIcon
-#RequireAdmin
+;~ #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=resources\icon.ico
 #AutoIt3Wrapper_Res_File_Add=resources\stripe.jpg, rt_rcdata, stripe
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Language=1033
-#AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
+;~ #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 ;#pragma compile(UPX, False)
@@ -16,12 +16,12 @@
 #pragma compile(Comments, This program is freeware.)
 #pragma compile(ProductName, LeoMoon CPU-V)
 #pragma compile(FileDescription, LeoMoon CPU-V)
-#pragma compile(FileVersion, 2.0.3.0)
+#pragma compile(FileVersion, 2.0.4.0)
 #pragma compile(LegalCopyright, LeoMoon Studios)
 #pragma compile(CompanyName, LeoMoon Studios)
 #pragma compile(LegalTrademarks, LeoMoon Studios)
-#pragma compile(ProductVersion, 2.0.3.0)
-
+#pragma compile(ProductVersion, 2.0.4.0)
+;includes
 #include <GUIConstants.au3>
 #include <GUIConstantsEx.au3>
 #include <StaticConstants.au3>
@@ -29,7 +29,9 @@
 #include <EditConstants.au3>
 #include <GDIPlus.au3>
 #include <misc.au3>
-#include <Memory.au3> ;CPU name
+;cpu name
+#include <Memory.au3>
+;local includes
 #include <resources\ResourcesEx.au3>
 
 $override = 0
@@ -97,7 +99,7 @@ Func SwapEndian($iValue, $iSize = 0)
 EndFunc   ;==>SwapEndian
 
 Global $virt, $slat, $vmme
-Global $copyrightLbl, $mainFrm, $infoFrm, $appName = 'LeoMoon CPU-V', $appVer = '2.0.3'
+Global $copyrightLbl, $mainFrm, $infoFrm, $appName = 'LeoMoon CPU-V', $appVer = '2.0.4'
 Global $infoCoverLbl, $hImage, $hImage2, $hImage3, $hGraphic, $cpuGrp, $osGrp, $supportedGrp
 Global $enabledGrp, $tip_txt, $cpuGrp, $depLbl, $slatLbl, $vmmeLbl
 
