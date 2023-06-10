@@ -16,11 +16,11 @@
 #pragma compile(Comments, This program is freeware.)
 #pragma compile(ProductName, LeoMoon CPU-V)
 #pragma compile(FileDescription, LeoMoon CPU-V)
-#pragma compile(FileVersion, 2.0.4.0)
+#pragma compile(FileVersion, 2.0.5.0)
 #pragma compile(LegalCopyright, LeoMoon Studios)
 #pragma compile(CompanyName, LeoMoon Studios)
 #pragma compile(LegalTrademarks, LeoMoon Studios)
-#pragma compile(ProductVersion, 2.0.4.0)
+#pragma compile(ProductVersion, 2.0.5.0)
 ;includes
 #include <GUIConstants.au3>
 #include <GUIConstantsEx.au3>
@@ -59,28 +59,28 @@ DllStructSetData($tCodeBuffer, 1, _
 		"0x" & _
 		"" & _ ; 10. SET eax AND CALL
 		"B8" & SwapEndian(0x80000002) & _						; mov eax, 0x80000002
-		"0FA2" & _											   ; cpuid
+		"0FA2" & _												; cpuid
 		"" & _ ; 20. ARRANGE DATA
-		"A3" & SwapEndian($pBuffer) & _						  ; mov dword[$pBuffer], eax
+		"A3" & SwapEndian($pBuffer) & _							; mov dword[$pBuffer], eax
 		"891D" & SwapEndian($pBuffer + 4) & _					; mov dword[$pBuffer + 4], ebx
 		"890D" & SwapEndian($pBuffer + 8) & _					; mov dword[$pBuffer + 8], ecx
-		"8915" & SwapEndian($pBuffer + 12) & _				   ; mov dword[$pBuffer + 12], edx
+		"8915" & SwapEndian($pBuffer + 12) & _					; mov dword[$pBuffer + 12], edx
 		"" & _ ; 30. SET eax AND CALL
 		"B8" & SwapEndian(0x80000003) & _						; mov eax, 0x80000003
-		"0FA2" & _											   ; cpuid
+		"0FA2" & _												; cpuid
 		"" & _ ; 40. ARRANGE DATA
-		"A3" & SwapEndian($pBuffer + 16) & _					 ; mov dword[$pBuffer + 16], eax
-		"891D" & SwapEndian($pBuffer + 20) & _				   ; mov dword[$pBuffer + 20], ebx
-		"890D" & SwapEndian($pBuffer + 24) & _				   ; mov dword[$pBuffer + 24], ecx
-		"8915" & SwapEndian($pBuffer + 28) & _				   ; mov dword[$pBuffer + 28], edx
+		"A3" & SwapEndian($pBuffer + 16) & _					; mov dword[$pBuffer + 16], eax
+		"891D" & SwapEndian($pBuffer + 20) & _					; mov dword[$pBuffer + 20], ebx
+		"890D" & SwapEndian($pBuffer + 24) & _					; mov dword[$pBuffer + 24], ecx
+		"8915" & SwapEndian($pBuffer + 28) & _					; mov dword[$pBuffer + 28], edx
 		"" & _ ; 50. SET eax AND CALL
 		"B8" & SwapEndian(0x80000004) & _						; mov eax, 0x80000004
-		"0FA2" & _											   ; cpuid
+		"0FA2" & _												; cpuid
 		"" & _ ; 60. ARRANGE DATA
-		"A3" & SwapEndian($pBuffer + 32) & _					 ; mov dword[$pBuffer + 32], eax
-		"891D" & SwapEndian($pBuffer + 36) & _				   ; mov dword[$pBuffer + 36], ebx
-		"890D" & SwapEndian($pBuffer + 40) & _				   ; mov dword[$pBuffer + 40], ecx
-		"8915" & SwapEndian($pBuffer + 44) & _				   ; mov dword[$pBuffer + 44], edx
+		"A3" & SwapEndian($pBuffer + 32) & _					; mov dword[$pBuffer + 32], eax
+		"891D" & SwapEndian($pBuffer + 36) & _					; mov dword[$pBuffer + 36], ebx
+		"890D" & SwapEndian($pBuffer + 40) & _					; mov dword[$pBuffer + 40], ecx
+		"8915" & SwapEndian($pBuffer + 44) & _					; mov dword[$pBuffer + 44], edx
 		"" & _ ; 70. RETURN
 		"C3" _
 		)
@@ -99,7 +99,7 @@ Func SwapEndian($iValue, $iSize = 0)
 EndFunc   ;==>SwapEndian
 
 Global $virt, $slat, $vmme
-Global $copyrightLbl, $mainFrm, $infoFrm, $appName = 'LeoMoon CPU-V', $appVer = '2.0.4'
+Global $copyrightLbl, $mainFrm, $infoFrm, $appName = 'LeoMoon CPU-V', $appVer = '2.0.5'
 Global $infoCoverLbl, $hImage, $hImage2, $hImage3, $hGraphic, $cpuGrp, $osGrp, $supportedGrp
 Global $enabledGrp, $tip_txt, $cpuGrp, $depLbl, $slatLbl, $vmmeLbl
 

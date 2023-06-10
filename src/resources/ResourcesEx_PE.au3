@@ -10,6 +10,7 @@ Global $g_vMacro_J3611D687A2E2445F907F05FFD04B3A5DD611C3C6DAB446A4B196B389830541
 #include <WinAPIMisc.au3>
 #include <WinAPIRes.au3>
 #include <WindowsConstants.au3>
+#include <WinAPISysWin.au3>
 OnAutoItExitRegister(_GDIPlus_Shutdown)
 OnAutoItExitRegister(_Resource_DestroyAll)
 _GDIPlus_Startup()
@@ -234,7 +235,7 @@ If $iError = 0 And $iLength > 0 Then
 $bReturn = __Resource_SetToCtrlID($iCtrlID, $hHBITMAP, $RT_BITMAP, $bDestroy, $bResize)
 $iError = @error
 If $bReturn Then
-If $__WINVER >= 0x0600 Then
+If _WinAPI_GetVersion() >= 6.0 Then
 $bReturn = _WinAPI_DeleteObject($hHBITMAP) > 0
 $vReturn = $bReturn
 Else
