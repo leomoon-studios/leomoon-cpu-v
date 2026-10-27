@@ -21,7 +21,7 @@ Install the pinned AutoIt, SciTE4AutoIt3, and Inno Setup tools in an empty direc
 
 The checks run AutoIt syntax validation and noninteractive regression tests without opening the GUI or probing the host CPU. To build, pass the intended version as `-Version`, along with `-AutoItDirectory` and `-AutoIt3WrapperPath`, to `scripts/build-windows.ps1`. The build injects that version into the staged application and executable metadata; the source has no release version. The resulting x86 executable is written to `build\windows\output`.
 
-The single **Build Windows packages** workflow runs when an exact `vX.Y.Z` tag is pushed, or manually with an `X.Y.Z` version. It runs checks before building, verifies the portable ZIP and installer, and uploads the packages, manifest, and checksums as a workflow artifact. As with HotKeyz, it does not publish a GitHub Release.
+The single **Build Windows packages** workflow runs when an exact `vX.Y.Z` tag is pushed, or manually with an `X.Y.Z` version. It runs checks before building and verifies the portable ZIP and installer. A tag push publishes a GitHub Release with the packages, manifest, checksums, and commit notes; a manual run uploads a workflow artifact without publishing a release.
 
 On an interactive Windows desktop, run the additional smoke test after building:
 
