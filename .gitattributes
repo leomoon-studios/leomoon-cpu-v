@@ -1,0 +1,20 @@
+# Keep the reset source tree stable across operating systems without a bulk rewrite.
+* text=auto
+*.au3 text eol=lf
+*.bat text eol=lf
+*.ps1 text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# This translation file is UTF-16 LE with CRLF and must stay byte-for-byte intact.
+src/resources/CPU-V.ini -text
+
+# Keep application assets and native binaries byte-for-byte intact.
+*.dll -text
+*.exe -text
+*.sys -text
+*.ico -text
+*.jpg -text
+*.png -text
+*.psd -text
