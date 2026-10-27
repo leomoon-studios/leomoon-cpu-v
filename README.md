@@ -23,6 +23,8 @@ The checks run AutoIt syntax validation and noninteractive regression tests with
 
 GitHub Actions runs the same checks for pull requests and can be started manually using the **CI** workflow. It uses the pinned AutoIt toolchain on Windows Server 2022.
 
+The **Build Windows packages** workflow runs when an exact `vX.Y.Z` tag is pushed, or manually with an `X.Y.Z` version. It runs checks before building, verifies the portable ZIP and installer, and uploads the packages, manifest, and checksums as a workflow artifact. As with HotKeyz, it does not publish a GitHub Release.
+
 On an interactive Windows desktop, run the additional smoke test after building:
 
 ```powershell

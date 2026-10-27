@@ -1,0 +1,104 @@
+name: Build Windows packages
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Test build version in X.Y.Z form
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check release tag and source
+    runs-on: windows-2022
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      release_date: ${{ steps.metadata.outputs.release_date }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Validate release tag
+        id: metadata
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          BUILD_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:EVENT_NAME -eq 'workflow_dispatch') {
+            if ($env:BUILD_VERSION -notmatch '^(\d+\.\d+\.\d+)$') {
+              throw 'Manual build version must use exact X.Y.Z numeric form'
+            }
+            $version = $env:BUILD_VERSION
+          } elseif ($env:RELEASE_TAG -match '^v(\d+\.\d+\.\d+)$') {
+            $version = $Matches[1]
+          } else {
+            throw 'Release tag must use exact vX.Y.Z numeric form'
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "release_date=$([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Install checksum-pinned build tools
+        id: tools
+        shell: pwsh
+        run: '& scripts/install-build-tools.ps1 -ToolsDirectory "$env:RUNNER_TEMP\leomoon-cpu-v-tools"'
+
+      - name: Run AutoIt checks and regression tests
+        shell: pwsh
+        env:
+          AUTOIT_DIRECTORY: ${{ steps.tools.outputs.autoit_directory }}
+        run: '& scripts/check.ps1 -ToolchainDirectory $env:AUTOIT_DIRECTORY'
+
+  build:
+    name: Build and verify Windows packages
+    needs: check
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Install checksum-pinned build tools
+        id: tools
+        shell: pwsh
+        run: '& scripts/install-build-tools.ps1 -ToolsDirectory "$env:RUNNER_TEMP\leomoon-cpu-v-tools"'
+
+      - name: Build x86 application
+        shell: pwsh
+        env:
+          BUILD_VERSION: ${{ needs.check.outputs.version }}
+          AUTOIT_DIRECTORY: ${{ steps.tools.outputs.autoit_directory }}
+          AUTOIT3WRAPPER_PATH: ${{ steps.tools.outputs.autoit3wrapper_path }}
+        run: '& scripts/build-windows.ps1 -Version $env:BUILD_VERSION -AutoItDirectory $env:AUTOIT_DIRECTORY -AutoIt3WrapperPath $env:AUTOIT3WRAPPER_PATH'
+
+      - name: Package and verify portable and installer artifacts
+        shell: pwsh
+        env:
+          BUILD_VERSION: ${{ needs.check.outputs.version }}
+          ISCC_PATH: ${{ steps.tools.outputs.iscc_path }}
+          RELEASE_DATE: ${{ needs.check.outputs.release_date }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          & scripts/package-windows.ps1 -Version $env:BUILD_VERSION -StageDirectory 'build\windows\output' -DistDirectory 'dist' -IsccPath $env:ISCC_PATH -ReleaseDate $env:RELEASE_DATE -Commit $env:COMMIT_SHA
+          & scripts/verify-windows-package.ps1 -ArtifactDirectory 'dist' -Version $env:BUILD_VERSION -RunInstallerSmokeTest
+
+      - name: Upload verified Windows packages
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: leomoon-cpu-v-${{ needs.check.outputs.version }}-windows-x86-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
