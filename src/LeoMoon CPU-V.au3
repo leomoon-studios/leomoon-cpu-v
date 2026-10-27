@@ -38,13 +38,10 @@
 #include "core\AppInfo.au3"
 Global $copyrightLbl, $mainFrm, $appName = $APP_TITLE, $appVer = $APP_VERSION
 Global $infoCoverLbl, $hImage, $hImage2, $hImage3, $hGraphic, $cpuGrp, $osGrp, $supportedGrp
-Global $enabledGrp, $tip_txt, $depLbl, $slatLbl, $vmmeLbl
+Global $enabledGrp, $depLbl, $slatLbl, $vmmeLbl
 Global $bannerPic, $appLbl, $verLbl, $infoGrp, $infoLbl, $cpuLbl, $osLbl
 Global $cpuArch, $osArch, $sLang
 
-Global $yy_txt, $nn_txt, $yn_txt, $yyb_txt, $wrong_txt, $osNoSupported_txt, $cpuNotSupported_txt
-Global $tip01_txt, $tip02_txt, $tip03_txt, $tip04_txt, $tip05_txt, $tip06_txt, $tip07_txt
-Global $cpuArch_txt, $osArch_txt, $supported_txt, $enabled_txt, $oops_txt
 Global $cpuName = 'Unknown CPU'
 
 ; RtlGetVersion reports the real Windows version without a compatibility manifest.

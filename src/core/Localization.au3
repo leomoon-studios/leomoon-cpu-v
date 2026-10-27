@@ -1,4 +1,7 @@
 #include-once
+Global $yy_txt, $nn_txt, $yn_txt, $yyb_txt, $wrong_txt, $osNoSupported_txt, $cpuNotSupported_txt
+Global $tip01_txt, $tip02_txt, $tip03_txt, $tip04_txt, $tip05_txt, $tip06_txt, $tip07_txt, $tip_txt
+Global $cpuArch_txt, $osArch_txt, $supported_txt, $enabled_txt, $oops_txt
 
 Func _LocaleLanguage($sLocale)
 	Switch StringLower($sLocale)

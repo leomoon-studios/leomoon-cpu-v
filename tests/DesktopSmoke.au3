@@ -5,6 +5,8 @@
 ; Optional arguments: executable path, and "mock-cs" for the Step 4 mock fixture.
 Local $sExe = @ScriptDir & '\..\build\LeoMoon CPU-V.exe'
 If $CmdLine[0] >= 1 Then $sExe = $CmdLine[1]
+Local $sExpectedVersion = $APP_VERSION
+If $CmdLine[0] >= 3 Then $sExpectedVersion = $CmdLine[3]
 Local $aBefore = _FileListToArray(@TempDir, 'cpu-v-*', 2)
 Local $iPid = Run('"' & $sExe & '"', @ScriptDir)
 If Not $iPid Then
@@ -29,7 +31,7 @@ EndIf
 Sleep(1000)
 ConsoleWrite('Window text:' & @CRLF & WinGetText($hWindow) & @CRLF)
 Local $sText = WinGetText($hWindow)
-If Not StringInStr($sText, $APP_TITLE) Or Not StringInStr($sText, 'v' & $APP_VERSION) Then
+If Not StringInStr($sText, $APP_TITLE) Or Not StringInStr($sText, 'v' & $sExpectedVersion) Then
 	ConsoleWrite('FAIL: application title or version label is missing' & @CRLF)
 	WinClose($hWindow)
 	Exit 1

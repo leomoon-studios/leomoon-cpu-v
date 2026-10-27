@@ -46,6 +46,16 @@ Virtualization is **enabled** when the processor reports support and firmware en
 
 The application title and version are defined in `src/core/AppInfo.au3`. The local build stages the source and uses those values for the executable's title and version metadata as well as the runtime display.
 
+For a versioned Windows build with the same pinned toolchain as HotKeyz, run:
+
+```powershell
+.\scripts\install-build-tools.ps1 -ToolsDirectory "$PWD\build\tools"
+.\scripts\check.ps1 -ToolchainDirectory "$PWD\build\tools\autoit-v3.3.18.0\install"
+.\scripts\build-windows.ps1 -Version 2.0.5 -AutoItDirectory "$PWD\build\tools\autoit-v3.3.18.0\install" -AutoIt3WrapperPath "$PWD\build\tools\scite4autoit3-v21.316.1639.0\AutoIt3Wrapper\AutoIt3Wrapper.au3"
+```
+
+The tool installer verifies the downloads before extracting or installing them. Use a new tools directory on each installation. The versioned build stages its source and writes `build\windows\output\LeoMoon CPU-V.exe`; it checks the x86 architecture, file and product versions, application icon, and embedded stripe resource.
+
 ## Bundled resource inventory
 
 The hashes below are for the `v2.0.5` baseline before package changes. `CPU-V.ini` is UTF-16 LE and is intentionally treated as binary by Git.

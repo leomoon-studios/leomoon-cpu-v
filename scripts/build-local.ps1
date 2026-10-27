@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [string]$AutoItExe,
-    [string]$AutoIt3Wrapper
+    [string]$AutoIt3Wrapper,
+    [ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version,
+    [string]$OutputFile
 )
 
 $ErrorActionPreference = 'Stop'
@@ -99,7 +101,8 @@ function Invoke-OptionalSigning {
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $sourceDirectory = Join-Path $repositoryRoot 'src'
-$outputFile = Join-Path $repositoryRoot 'build\LeoMoon CPU-V.exe'
+if (-not $OutputFile) { $OutputFile = Join-Path $repositoryRoot 'build\LeoMoon CPU-V.exe' }
+$outputFile = [IO.Path]::GetFullPath($OutputFile)
 
 $autoItPath = Find-AutoItExe -ExplicitPath $AutoItExe
 $wrapperPath = Find-AutoIt3Wrapper -ExplicitPath $AutoIt3Wrapper -AutoItPath $autoItPath
@@ -112,15 +115,18 @@ try {
     if ($appInfo -notmatch '(?m)^Global Const \$APP_TITLE = ''([^'']+)''[ \t]*\r?$') { throw 'Invalid application title in AppInfo.au3.' }
     $title = $Matches[1]
     if ($appInfo -notmatch '(?m)^Global Const \$APP_VERSION = ''(\d+\.\d+\.\d+)''[ \t]*\r?$') { throw 'Invalid application version in AppInfo.au3.' }
-    $version = $Matches[1] + '.0'
+    if (-not $Version) { $Version = $Matches[1] }
+    $versionInfo = $Version + '.0'
+    $appInfo = $appInfo -replace '(?m)^Global Const \$APP_VERSION = ''\d+\.\d+\.\d+''[ \t]*\r?$', "Global Const `$APP_VERSION = '$Version'"
+    [IO.File]::WriteAllText((Join-Path $stageDirectory 'core\AppInfo.au3'), $appInfo, [Text.UTF8Encoding]::new($false))
     $sourceFile = Join-Path $stageDirectory 'LeoMoon CPU-V.au3'
     $source = Get-Content -LiteralPath $sourceFile -Raw
     $source = $source -replace '(?m)^#pragma compile\(ProductName, .+\)[ \t]*\r?$', "#pragma compile(ProductName, $title)"
     $source = $source -replace '(?m)^#pragma compile\(FileDescription, .+\)[ \t]*\r?$', "#pragma compile(FileDescription, $title)"
-    $source = $source -replace '(?m)^#pragma compile\((FileVersion|ProductVersion), .+\)[ \t]*\r?$', "#pragma compile(`$1, $version)"
+    $source = $source -replace '(?m)^#pragma compile\((FileVersion|ProductVersion), .+\)[ \t]*\r?$', "#pragma compile(`$1, $versionInfo)"
     $source = $source -replace '(?m)^#pragma compile\(Out, .+\)[ \t]*\r?$', "#pragma compile(Out, $outputFile)"
     [IO.File]::WriteAllText($sourceFile, $source, [Text.UTF8Encoding]::new($false))
-    $arguments = '"{0}" /in "{1}"' -f $wrapperPath, $sourceFile
+    $arguments = '"{0}" /in "{1}" /AutoIt3Dir "{2}"' -f $wrapperPath, $sourceFile, (Split-Path -Parent $autoItPath)
     $process = Start-Process -FilePath $autoItPath -ArgumentList $arguments -WorkingDirectory $stageDirectory -WindowStyle Hidden -Wait -PassThru
     if ($process.ExitCode -ne 0) {
         throw "AutoIt compilation failed with exit code $($process.ExitCode)."
