@@ -4,7 +4,7 @@ LeoMoon CPU-V is a small x86 Windows utility that reports whether hardware virtu
 
 ## Support
 
-The maintained baseline is version `v2.0.5`. The application entry point is [`src/LeoMoon CPU-V.au3`](src/LeoMoon%20CPU-V.au3). CPU-V supports Windows 8 and later. Windows 7 and Vista support, including their helper driver and executable, will be removed as part of the modernization work.
+The maintained baseline is version `v2.0.5`. The application entry point is [`src/LeoMoon CPU-V.au3`](src/LeoMoon%20CPU-V.au3). CPU-V supports Windows 8 and later; it rejects older Windows versions before extracting resources or checking hardware.
 
 ## Local build
 
@@ -37,11 +37,12 @@ Then launch `build\LeoMoon CPU-V.exe` and confirm the window opens, the stripe b
 Run the hardware-independent virtualization checks with AutoIt installed:
 
 ```powershell
-AutoIt3.exe /ErrorStdOut .\tests\VirtualizationResultTests.au3
-AutoIt3.exe /ErrorStdOut .\tests\LocalizationTests.au3
+AutoIt3.exe /ErrorStdOut .\tests\TestRunner.au3
 ```
 
-For multiple processor records, an unsupported processor takes precedence, followed by unknown data, then disabled firmware; virtualization is enabled only if every processor reports support and enabled firmware. For individual features, a negative result takes precedence over unknown data. CPU-V displays a question mark when a result cannot be determined.
+The runner uses fixtures in `tests/fixtures/` and does not launch the GUI, query the host CPU, or extract a driver. It returns a nonzero exit code if a suite fails. On an interactive Windows desktop, run `AutoIt3.exe /ErrorStdOut .\tests\DesktopSmoke.au3` after building. The desktop check launches CPU-V, verifies its window and temporary resources, saves `build\desktop-check.png` for visual inspection, and closes it.
+
+Virtualization is **enabled** when the processor reports support and firmware enables it, **disabled** when support is reported but firmware disables it, and **unsupported** when the processor reports no monitor-mode extensions. CPU-V shows an unknown result when required WMI values are missing or a query fails. For multiple processor records, unsupported takes precedence, followed by unknown, then disabled; enabled requires every processor to report support and enabled firmware. For individual features, a negative result takes precedence over unknown data. CPU-V displays a question mark when a result cannot be determined.
 
 The application title and version are defined in `src/core/AppInfo.au3`. The local build stages the source and uses those values for the executable's title and version metadata as well as the runtime display.
 

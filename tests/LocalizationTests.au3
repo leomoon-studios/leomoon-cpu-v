@@ -1,9 +1,10 @@
 #include "..\src\core\Localization.au3"
 
-Local $aLocales[4][2] = [['0409', 'EN'], ['0804', 'CS'], ['0404', 'CT'], ['0429', 'FA']]
+Local $aLocales = IniReadSection(@ScriptDir & '\fixtures\locales.ini', 'locales')
+If @error Or Not IsArray($aLocales) Then Exit 1
 Local $sIni = @ScriptDir & '\..\src\resources\CPU-V.ini'
 Local $iFailures = 0
-For $i = 0 To UBound($aLocales) - 1
+For $i = 1 To $aLocales[0][0]
 	Local $sLanguage = _LocaleLanguage($aLocales[$i][0])
 	If $sLanguage <> $aLocales[$i][1] Or _LocalizedText($sIni, $sLanguage, 'CPU Architecture') = '' Then
 		ConsoleWrite('FAIL locale ' & $aLocales[$i][0] & @CRLF)
