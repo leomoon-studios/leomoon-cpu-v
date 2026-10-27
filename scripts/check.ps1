@@ -16,7 +16,7 @@ foreach ($target in $targets) {
     & $checker -q -d -I (Join-Path $toolchain 'Include') -I (Join-Path $root 'src') $path
     if ($LASTEXITCODE -ne 0) { throw "Au3Check failed for $target with exit code $LASTEXITCODE" }
 }
-$git = Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue
+$git = Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($git) { $gitPath = $git.Source } else { $gitPath = Join-Path $env:ProgramFiles 'Git\cmd\git.exe' }
 if (-not (Test-Path -LiteralPath $gitPath -PathType Leaf)) { throw 'Git was not found.' }
 $before = @(& $gitPath -C $root status --porcelain)
