@@ -34,6 +34,14 @@ On a clean Windows checkout, compile the program and run:
 
 Then launch `build\LeoMoon CPU-V.exe` and confirm the window opens, the stripe banner renders, localized text loads, and the status icons appear. This interactive check is required because resource loading occurs inside the GUI.
 
+Run the hardware-independent virtualization checks with AutoIt installed:
+
+```powershell
+AutoIt3.exe /ErrorStdOut .\tests\VirtualizationResultTests.au3
+```
+
+For multiple processor records, an unsupported processor takes precedence, followed by unknown data, then disabled firmware; virtualization is enabled only if every processor reports support and enabled firmware. For individual features, a negative result takes precedence over unknown data. CPU-V displays a question mark when a result cannot be determined.
+
 ## Bundled resource inventory
 
 The hashes below are for the `v2.0.5` baseline before package changes. `CPU-V.ini` is UTF-16 LE and is intentionally treated as binary by Git.

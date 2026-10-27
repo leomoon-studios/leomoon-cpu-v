@@ -28,13 +28,11 @@
 #include <WindowsConstants.au3>
 #include <EditConstants.au3>
 #include <GDIPlus.au3>
+#include <WinAPIGdi.au3>
 #include <misc.au3>
 ;local includes
 #include <resources\ResourcesEx.au3>
-
-$override = 0
-
-Global $virt, $slat, $vmme
+#include "core\CpuProbe.au3"
 Global $copyrightLbl, $mainFrm, $infoFrm, $appName = 'LeoMoon CPU-V', $appVer = '2.0.5'
 Global $infoCoverLbl, $hImage, $hImage2, $hImage3, $hGraphic, $cpuGrp, $osGrp, $supportedGrp
 Global $enabledGrp, $tip_txt, $cpuGrp, $depLbl, $slatLbl, $vmmeLbl
@@ -70,22 +68,8 @@ FileInstall('resources\CPU-V.ini',@TempDir&'\CPU-V.ini',1)
 FileInstall('resources\CPU-V.dll',@TempDir&'\CPU-V.dll',1)
 
 ;get locale and dep
-Local $objWMI, $strWMI_Query = "", $objWMI_QueryResult, $objWMI_Item, $dep, $locale
-$objWMI = ObjGet('winmgmts:{impersonationLevel=Impersonate}!\\.\root\cimv2')
-If IsObj($objWMI) Then
-    $strWMI_Query = 'SELECT Locale, DataExecutionPrevention_Available FROM Win32_OperatingSystem'
-    $objWMI_QueryResult = $objWMI.ExecQuery($strWMI_Query, 'WQL')
-    For $objWMI_Item In $objWMI_QueryResult
-		$locale = $objWMI_Item.Locale
-        $dep = $objWMI_Item.DataExecutionPrevention_Available
-    Next
-    $objWMI = 0
-    $objWMI_QueryResult = 0
-    $objWMI_Item = 0
-EndIf
-
-If $locale == '' Then $locale = '1033'
-If $dep == '' Then $dep = False
+Local $locale, $dep
+_WindowsProbe($locale, $dep)
 
 ;setting lang based on Locale
 If $locale = "0804" Or $locale = "1004" Then
@@ -96,9 +80,6 @@ ElseIf $locale = "0429" Then
 	$sLang = 'FA'
 Else
 	$sLang = 'EN'
-EndIf
-If $override == 1 Then
-	$sLang = 'FA' ;CS, CT, EN, FA
 EndIf
 _langLoad()
 
@@ -112,84 +93,46 @@ Else
 EndIf
 $osArch = @OSArch
 
-; Get the CPU name and virtualization properties from WMI.
-$objWMI = ObjGet('winmgmts:{impersonationLevel=Impersonate}!\\.\root\cimv2')
-If IsObj($objWMI) Then
-	$strWMI_Query = 'SELECT Name, VirtualizationFirmwareEnabled, VMMonitorModeExtensions, SecondLevelAddressTranslationExtensions FROM Win32_Processor'
-	$objWMI_QueryResult = $objWMI.ExecQuery($strWMI_Query, 'WQL')
-	If IsObj($objWMI_QueryResult) Then
-		For $objWMI_Item In $objWMI_QueryResult
-			If IsString($objWMI_Item.Name) And StringStripWS($objWMI_Item.Name, 3) <> '' Then $cpuName = StringStripWS($objWMI_Item.Name, 3)
-			$virt = $objWMI_Item.VirtualizationFirmwareEnabled
-			$vmme = $objWMI_Item.VMMonitorModeExtensions
-			$slat = $objWMI_Item.SecondLevelAddressTranslationExtensions
-		Next
-	EndIf
-	$objWMI = 0
-	$objWMI_QueryResult = 0
-	$objWMI_Item = 0
-EndIf
+Local $aProcessors
+_CpuProbe($aProcessors)
+$cpuName = _CpuName($aProcessors)
+Local $virt = _VirtualizationResult($aProcessors)
+Local $slat = _CombineFeature($aProcessors, $CPU_SLAT), $vmme = _CombineFeature($aProcessors, $CPU_VMME)
+Local $vt = _CpuVendorLabel($cpuName), $info, $supportedLbl_msg = 0, $enabledLbl_msg = 0
+Switch $virt
+	Case $STATE_ENABLED
+		$info = $yy_txt
+		$supportedLbl_msg = 1
+		$enabledLbl_msg = 1
+	Case $STATE_DISABLED
+		$info = $yn_txt
+		$supportedLbl_msg = 1
+		$enabledLbl_msg = 2
+	Case $STATE_UNSUPPORTED
+		$info = $nn_txt
+		$supportedLbl_msg = 2
+		$enabledLbl_msg = 2
+	Case Else
+		$info = 'Unable to determine virtualization status.'
+EndSwitch
+Local $depSym, $depClr, $slatSym, $slatClr, $vmmeSym, $vmmeClr
+_FeatureAppearance($dep, $depSym, $depClr)
+_FeatureAppearance($slat, $slatSym, $slatClr)
+_FeatureAppearance($vmme, $vmmeSym, $vmmeClr)
 
-; Change UI message.
-If @CPUArch == 'X64' And $virt == 'True' Then
-	$info = $yy_txt
-	$supportedLbl_msg = '1'
-	$enabledLbl_msg = '1'
-ElseIf @CPUArch == 'X64' And $virt == 'False' Then
-	$info = $yn_txt
-	$supportedLbl_msg = '1'
-	$enabledLbl_msg = '2'
-Else
-	$info = $nn_txt
-	$supportedLbl_msg = '2'
-	$enabledLbl_msg = '2'
-EndIf
-
-;####################################################################
-;###### OVERRIDE ####################################################
-;####################################################################
-If $override = 1 Then
-	$info = $yy_txt
-	$supportedLbl_msg = '1'
-	$enabledLbl_msg = '1'
-	$dep = 'True'
-	$slat = 'True'
-	$vmme = 'True'
-EndIf
-
-If $dep == 'True' Then
-	$depSym = ChrW(Dec('2714'))
-	$depClr = 0x004600
-Else
-	$depSym = ChrW(Dec('2716'))
-	$depClr = 0xff0000
-EndIf
-
-If $slat == 'True' Then
-	$slatSym = ChrW(Dec('2714'))
-	$slatClr = 0x004600
-Else
-	$slatSym = ChrW(Dec('2716'))
-	$slatClr = 0xff0000
-EndIf
-
-If $vmme == 'True' Then
-	$vmmeSym = ChrW(Dec('2714'))
-	$vmmeClr = 0x004600
-Else
-	$vmmeSym = ChrW(Dec('2716'))
-	$vmmeClr = 0xff0000
-EndIf
-
-If StringInStr($cpuName, 'Intel') Then
-	$vt = 'VT-x'
-ElseIf StringInStr($cpuName, 'AMD') Then
-	$vt = 'AMD-v'
-ElseIf StringInStr($cpuName, 'VIA') Then
-	$vt = 'VIA VT'
-Else
-	$vt = 'VT'
-EndIf
+Func _FeatureAppearance($iState, ByRef $sSymbol, ByRef $iColor)
+	Switch $iState
+		Case $STATE_ENABLED
+			$sSymbol = ChrW(Dec('2714'))
+			$iColor = 0x004600
+		Case $STATE_DISABLED
+			$sSymbol = ChrW(Dec('2716'))
+			$iColor = 0xff0000
+		Case Else
+			$sSymbol = '?'
+			$iColor = 0x555555
+	EndSwitch
+EndFunc
 
 Opt("GUIOnEventMode", 1) ;For multi GUI functions
 
@@ -239,11 +182,21 @@ Func _mainGui()
 	;GUICtrlCreateGroup("", -99, -99, 1, 1)
 	$supportedGrp = XSkinGroup($vt&" Supported", 8, 226, 169, 105, 0x3e3d3d)
 	GUICtrlSetFont(-1, 9, 800, 0, "Tahoma")
-	GuiCtrlCreateIcon(@TempDir&'\CPU-V.dll', $supportedLbl_msg, 52+5, 250, 70, 70)
+	If $supportedLbl_msg = 0 Then
+		GUICtrlCreateLabel('?', 57, 250, 70, 70, $SS_CENTER)
+		GUICtrlSetFont(-1, 35, 600, 0, 'Tahoma')
+	Else
+		GUICtrlCreateIcon(@TempDir&'\CPU-V.dll', $supportedLbl_msg, 57, 250, 70, 70)
+	EndIf
 	;GUICtrlCreateGroup("", -99, -99, 1, 1)
 	$enabledGrp = XSkinGroup($vt&" Enabled", 184, 226, 169, 105, 0x3e3d3d)
 	GUICtrlSetFont(-1, 9, 800, 0, "Tahoma")
-	GuiCtrlCreateIcon(@TempDir&'\CPU-V.dll', $enabledLbl_msg, 230+3, 250, 70, 70)
+	If $enabledLbl_msg = 0 Then
+		GUICtrlCreateLabel('?', 233, 250, 70, 70, $SS_CENTER)
+		GUICtrlSetFont(-1, 35, 600, 0, 'Tahoma')
+	Else
+		GUICtrlCreateIcon(@TempDir&'\CPU-V.dll', $enabledLbl_msg, 233, 250, 70, 70)
+	EndIf
 	;GUICtrlCreateGroup("", -99, -99, 1, 1)
 	$depLbl = GUICtrlCreateLabel($depSym&' Data Execution Prevention (DEP)', 8, 336, 345, 18, $SS_LEFT)
 	GUICtrlSetFont(-1, 9, 400, 0, 'Tahoma')
