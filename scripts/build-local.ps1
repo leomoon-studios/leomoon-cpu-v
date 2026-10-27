@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($Version)) { throw 'A build version in X.Y.Z form must be supplied with -Version.' }
 
 function Resolve-ExistingPath {
     param(
@@ -114,10 +115,9 @@ try {
     $appInfo = Get-Content -LiteralPath (Join-Path $stageDirectory 'core\AppInfo.au3') -Raw
     if ($appInfo -notmatch '(?m)^Global Const \$APP_TITLE = ''([^'']+)''[ \t]*\r?$') { throw 'Invalid application title in AppInfo.au3.' }
     $title = $Matches[1]
-    if ($appInfo -notmatch '(?m)^Global Const \$APP_VERSION = ''(\d+\.\d+\.\d+)''[ \t]*\r?$') { throw 'Invalid application version in AppInfo.au3.' }
-    if (-not $Version) { $Version = $Matches[1] }
+    if ($appInfo -notmatch '(?m)^Global Const \$APP_VERSION = ''development''[ \t]*\r?$') { throw 'Version placeholder not found in AppInfo.au3.' }
     $versionInfo = $Version + '.0'
-    $appInfo = $appInfo -replace '(?m)^Global Const \$APP_VERSION = ''\d+\.\d+\.\d+''[ \t]*\r?$', "Global Const `$APP_VERSION = '$Version'"
+    $appInfo = $appInfo -replace '(?m)^Global Const \$APP_VERSION = ''development''[ \t]*\r?$', "Global Const `$APP_VERSION = '$Version'"
     [IO.File]::WriteAllText((Join-Path $stageDirectory 'core\AppInfo.au3'), $appInfo, [Text.UTF8Encoding]::new($false))
     $sourceFile = Join-Path $stageDirectory 'LeoMoon CPU-V.au3'
     $source = Get-Content -LiteralPath $sourceFile -Raw

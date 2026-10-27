@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$AutoItExe,
-    [string]$AutoIt3Wrapper
+    [string]$AutoIt3Wrapper,
+    [Parameter(Mandatory = $true)][ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,7 +10,7 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot 'build-local.ps1'
 $outputFile = Join-Path $repositoryRoot 'build\LeoMoon CPU-V.exe'
 
-& $buildScript -AutoItExe $AutoItExe -AutoIt3Wrapper $AutoIt3Wrapper
+& $buildScript -AutoItExe $AutoItExe -AutoIt3Wrapper $AutoIt3Wrapper -Version $Version
 
 if (-not (Test-Path -LiteralPath $outputFile -PathType Leaf)) {
     throw "Expected build output was not created: $outputFile"

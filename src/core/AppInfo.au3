@@ -1,5 +1,5 @@
 #include-once
 
-; The local build reads these values for the compiled executable metadata.
+; The build injects the release version into its staged copy of this file.
 Global Const $APP_TITLE = 'LeoMoon CPU-V'
-Global Const $APP_VERSION = '2.0.5'
+Global Const $APP_VERSION = 'development'

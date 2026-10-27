@@ -16,11 +16,11 @@
 #pragma compile(Comments, This program is freeware.)
 #pragma compile(ProductName, LeoMoon CPU-V)
 #pragma compile(FileDescription, LeoMoon CPU-V)
-#pragma compile(FileVersion, 2.0.5.0)
+#pragma compile(FileVersion, 0.0.0.0)
 #pragma compile(LegalCopyright, LeoMoon Studios)
 #pragma compile(CompanyName, LeoMoon Studios)
 #pragma compile(LegalTrademarks, LeoMoon Studios)
-#pragma compile(ProductVersion, 2.0.5.0)
+#pragma compile(ProductVersion, 0.0.0.0)
 ;includes
 #include <GUIConstants.au3>
 #include <GUIConstantsEx.au3>

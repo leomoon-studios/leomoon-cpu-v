@@ -1,72 +1,42 @@
 # LeoMoon CPU-V
 
-LeoMoon CPU-V is a small x86 Windows utility that reports whether hardware virtualization is supported and enabled.
+LeoMoon CPU-V is a Windows utility that reports whether hardware virtualization is supported and enabled.
 
-## Support
+## Supported systems
 
-The maintained baseline is version `v2.0.5`. The application entry point is [`src/LeoMoon CPU-V.au3`](src/LeoMoon%20CPU-V.au3). CPU-V supports Windows 8 and later; it rejects older Windows versions before extracting resources or checking hardware.
+CPU-V 3.0.0 supports Windows 8 and later. Earlier releases, including 2.0.5, supported Windows 7 and Vista. The application is compiled as a 32-bit executable and can run on 64-bit Windows.
 
-## Local build
+## Virtualization results
 
-Build on Windows with AutoIt installed and available as `AutoIt3.exe`:
+CPU-V reports whether virtualization is enabled, disabled in firmware, unsupported, or unknown. An unknown result means Windows did not provide the information needed to determine the status. On systems with multiple processors, an unsupported result takes precedence, followed by unknown and disabled; all processors must report support and enabled firmware for the overall result to be enabled.
 
-```powershell
-.\scripts\build-local.ps1
-```
+## Building and testing
 
-If AutoIt or AutoIt3Wrapper is installed elsewhere, pass explicit paths:
-
-```powershell
-.\scripts\build-local.ps1 -AutoItExe 'C:\Tools\AutoIt3\AutoIt3.exe' -AutoIt3Wrapper 'C:\Tools\AutoIt3\SciTE\AutoIt3Wrapper\AutoIt3Wrapper.au3'
-```
-
-The result is `build\LeoMoon CPU-V.exe`. Builds are unsigned unless the release workflow injects both optional GitHub secrets into `CPU_V_SIGNING_CERTIFICATE_BASE64` and `CPU_V_SIGNING_CERTIFICATE_PASSWORD`. When both values are present, the build signs the executable with `signtool.exe`; when neither is present, it continues unsigned. A partial signing configuration fails rather than silently producing an unexpected artifact. `CPU_V_SIGNING_TIMESTAMP_URL` may optionally override the default timestamp service.
-
-No certificate, password file, signing path, or signing credential is stored in this repository. The later GitHub release workflow will map optional repository secrets to those environment variables and will not require them for a successful release.
-
-## Baseline verification
-
-On a clean Windows checkout, compile the program and run:
-
-```powershell
-.\scripts\verify-baseline.ps1
-```
-
-Then launch `build\LeoMoon CPU-V.exe` and confirm the window opens, the stripe banner renders, localized text loads, and the status icons appear. This interactive check is required because resource loading occurs inside the GUI.
-
-Run the hardware-independent virtualization checks with AutoIt installed:
-
-```powershell
-AutoIt3.exe /ErrorStdOut .\tests\TestRunner.au3
-```
-
-The runner uses fixtures in `tests/fixtures/` and does not launch the GUI, query the host CPU, or extract a driver. It returns a nonzero exit code if a suite fails. On an interactive Windows desktop, run `AutoIt3.exe /ErrorStdOut .\tests\DesktopSmoke.au3` after building. The desktop check launches CPU-V, verifies its window and temporary resources, saves `build\desktop-check.png` for visual inspection, and closes it.
-
-Virtualization is **enabled** when the processor reports support and firmware enables it, **disabled** when support is reported but firmware disables it, and **unsupported** when the processor reports no monitor-mode extensions. CPU-V shows an unknown result when required WMI values are missing or a query fails. For multiple processor records, unsupported takes precedence, followed by unknown, then disabled; enabled requires every processor to report support and enabled firmware. For individual features, a negative result takes precedence over unknown data. CPU-V displays a question mark when a result cannot be determined.
-
-The application title and version are defined in `src/core/AppInfo.au3`. The local build stages the source and uses those values for the executable's title and version metadata as well as the runtime display.
-
-For a versioned Windows build with the same pinned toolchain as HotKeyz, run:
+Install the pinned AutoIt, SciTE4AutoIt3, and Inno Setup tools in an empty directory:
 
 ```powershell
 .\scripts\install-build-tools.ps1 -ToolsDirectory "$PWD\build\tools"
 .\scripts\check.ps1 -ToolchainDirectory "$PWD\build\tools\autoit-v3.3.18.0\install"
-.\scripts\build-windows.ps1 -Version 2.0.5 -AutoItDirectory "$PWD\build\tools\autoit-v3.3.18.0\install" -AutoIt3WrapperPath "$PWD\build\tools\scite4autoit3-v21.316.1639.0\AutoIt3Wrapper\AutoIt3Wrapper.au3"
 ```
 
-The tool installer verifies the downloads before extracting or installing them. Use a new tools directory on each installation. The versioned build stages its source and writes `build\windows\output\LeoMoon CPU-V.exe`; it checks the x86 architecture, file and product versions, application icon, and embedded stripe resource.
+The checks run AutoIt syntax validation and noninteractive regression tests without opening the GUI or probing the host CPU. To build, pass the intended version as `-Version`, along with `-AutoItDirectory` and `-AutoIt3WrapperPath`, to `scripts/build-windows.ps1`. The build injects that version into the staged application and executable metadata; the source has no release version. The resulting x86 executable is written to `build\windows\output`.
 
-## Bundled resource inventory
+GitHub Actions runs the same checks for pull requests and can be started manually using the **CI** workflow. It uses the pinned AutoIt toolchain on Windows Server 2022.
 
-The hashes below are for the `v2.0.5` baseline before package changes. `CPU-V.ini` is UTF-16 LE and is intentionally treated as binary by Git.
+On an interactive Windows desktop, run the additional smoke test after building:
 
-| Resource | Purpose | Provenance and license status | SHA-256 |
-| --- | --- | --- | --- |
-| `src/resources/CPU-V.dll` | Icon resource DLL used by the GUI | Shared legacy LeoMoon asset with HotKeyz, tracked in CPU-V since `v2.0.3`; no separate license declaration in the repository | `62cce2c15b1b06e3f7cc89c6707b437b010163d93ece7d40c349103d097987fb` |
-| `src/resources/CPU-V.ini` | Localized GUI strings | Shared legacy LeoMoon asset with HotKeyz, tracked in CPU-V since `v2.0.3`; no separate license declaration in the repository | `ba2267e8aa29108d63fd826e1fd3481bf905b4f1ec6f5de87ecce49378f8dc5b` |
-| `src/resources/stripe.jpg` | Top banner image | Shared legacy LeoMoon asset with HotKeyz, tracked in CPU-V since `v2.0.3`; no separate license declaration in the repository | `f80e0cf83f4a3aa6b8f27fd3c226281771304cbd2e60256c8921af0dc029dd8d` |
-| `src/resources/icon.ico` | Application executable and shortcut icon | Shared legacy LeoMoon asset with HotKeyz, tracked in CPU-V since `v2.0.3`; no separate license declaration in the repository | `82c2567264f20861d9657a05fa0ae3b368073bccaeb5acbc7daa58ceecca813b` |
-| `src/resources/ResourcesEx.au3` | Resource extraction and GUI resource helper UDF | Shared legacy AutoIt ResourcesEx UDF with HotKeyz, credited in its header to Zedna and guinness with community contributors; no license text is included in the vendored source | `d4bba8dd81ec34f9166f3374c577b464ba077b29a4c56e78eabe8edcb496bc6f` |
-| `src/resources/ResourcesEx_PE.au3` | Constants companion for ResourcesEx | Shared ResourcesEx companion with HotKeyz, credited by `ResourcesEx.au3` to PreExpand; no license text is included in the vendored source | `537c09c0b909d472ee1fb7206b1fed6af6e8c17b5cf80369b347cd8e1c81915c` |
+```powershell
+AutoIt3.exe /ErrorStdOut .\tests\DesktopSmoke.au3 '.\build\windows\output\LeoMoon CPU-V.exe' normal '<build-version>'
+```
 
-Future redistribution must retain the ResourceEx attribution and resolve its upstream license before altering or repackaging that code.
+The smoke test opens and closes CPU-V, checks its temporary resources, and saves a screenshot in `build\desktop-check.png` for visual inspection.
+
+## Windows packages
+
+`scripts/package-windows.ps1` creates a portable ZIP, a per-user Inno Setup installer, a release manifest, and `SHA256SUMS`. Pass the version, staged executable directory, an empty artifact directory, Inno Setup compiler path, release date, and commit. The script verifies the resulting artifacts. `scripts/verify-windows-package.ps1` can also run a silent install and uninstall test with `-RunInstallerSmokeTest`.
+
+Builds are unsigned unless both optional signing credentials are supplied to the build environment. No signing credentials are required for an unsigned build.
+
+## Third-party code
+
+The vendored AutoIt resource helper and its attribution are described in [`src/resources/README.md`](src/resources/README.md).

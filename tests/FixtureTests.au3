@@ -18,7 +18,7 @@ For $i = 1 To $aCases[0]
 Next
 Local $aFailed, $oService = ObjCreate('Scripting.Dictionary')
 If IniRead($sFixture, 'failed', 'service', '') <> 'invalid' Or _CpuProbe($aFailed, $oService) Or _VirtualizationResult($aFailed) <> Number(IniRead($sFixture, 'failed', 'result', '999')) Then $iFailures += 1
-If Not StringRegExp($APP_VERSION, '^\d+\.\d+\.\d+$') Or $APP_TITLE = '' Then $iFailures += 1
+If $APP_VERSION <> 'development' Or $APP_TITLE = '' Then $iFailures += 1
 If $iFailures Then Exit 1
 ConsoleWrite('Probe fixture and app version tests passed.' & @CRLF)
 
