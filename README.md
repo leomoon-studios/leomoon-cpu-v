@@ -38,9 +38,12 @@ Run the hardware-independent virtualization checks with AutoIt installed:
 
 ```powershell
 AutoIt3.exe /ErrorStdOut .\tests\VirtualizationResultTests.au3
+AutoIt3.exe /ErrorStdOut .\tests\LocalizationTests.au3
 ```
 
 For multiple processor records, an unsupported processor takes precedence, followed by unknown data, then disabled firmware; virtualization is enabled only if every processor reports support and enabled firmware. For individual features, a negative result takes precedence over unknown data. CPU-V displays a question mark when a result cannot be determined.
+
+The application title and version are defined in `src/core/AppInfo.au3`. The local build stages the source and uses those values for the executable's title and version metadata as well as the runtime display.
 
 ## Bundled resource inventory
 

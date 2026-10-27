@@ -30,12 +30,17 @@
 #include <GDIPlus.au3>
 #include <WinAPIGdi.au3>
 #include <misc.au3>
+#include <File.au3>
 ;local includes
 #include <resources\ResourcesEx.au3>
 #include "core\CpuProbe.au3"
-Global $copyrightLbl, $mainFrm, $infoFrm, $appName = 'LeoMoon CPU-V', $appVer = '2.0.5'
+#include "core\Localization.au3"
+#include "core\AppInfo.au3"
+Global $copyrightLbl, $mainFrm, $appName = $APP_TITLE, $appVer = $APP_VERSION
 Global $infoCoverLbl, $hImage, $hImage2, $hImage3, $hGraphic, $cpuGrp, $osGrp, $supportedGrp
-Global $enabledGrp, $tip_txt, $cpuGrp, $depLbl, $slatLbl, $vmmeLbl
+Global $enabledGrp, $tip_txt, $depLbl, $slatLbl, $vmmeLbl
+Global $bannerPic, $appLbl, $verLbl, $infoGrp, $infoLbl, $cpuLbl, $osLbl
+Global $cpuArch, $osArch, $sLang
 
 Global $yy_txt, $nn_txt, $yn_txt, $yyb_txt, $wrong_txt, $osNoSupported_txt, $cpuNotSupported_txt
 Global $tip01_txt, $tip02_txt, $tip03_txt, $tip04_txt, $tip05_txt, $tip06_txt, $tip07_txt
@@ -61,35 +66,34 @@ If $iMajorVersion < 6 Or ($iMajorVersion = 6 And $iMinorVersion < 2) Then
 	Exit 1
 EndIf
 
-;copy resources
-If FileExists(@TempDir&'\CPU-V.ini') Then FileSetAttrib(@TempDir&'\CPU-V.ini', '-R-A-S-H')
-If FileExists(@TempDir&'\CPU-V.dll') Then FileSetAttrib(@TempDir&'\CPU-V.dll', '-R-A-S-H')
-FileInstall('resources\CPU-V.ini',@TempDir&'\CPU-V.ini',1)
-FileInstall('resources\CPU-V.dll',@TempDir&'\CPU-V.dll',1)
+; Each instance owns its resources and removes them when it exits.
+Global $resourceDir = _TempFile(@TempDir, 'cpu-v-', '', 20)
+If Not DirCreate($resourceDir) Then
+	MsgBox(48, $appName, 'Unable to create the temporary resource directory.')
+	Exit 1
+EndIf
+OnAutoItExitRegister('_CleanupResources')
+Global $resourceIni = $resourceDir & '\CPU-V.ini', $resourceDll = $resourceDir & '\CPU-V.dll'
+Local $iniInstalled = FileInstall('resources\CPU-V.ini', $resourceIni, 1)
+Local $dllInstalled = FileInstall('resources\CPU-V.dll', $resourceDll, 1)
+If Not $iniInstalled Or Not $dllInstalled Then
+	MsgBox(48, $appName, 'Unable to extract application resources.')
+	Exit 1
+EndIf
 
 ;get locale and dep
 Local $locale, $dep
 _WindowsProbe($locale, $dep)
 
 ;setting lang based on Locale
-If $locale = "0804" Or $locale = "1004" Then
-	$sLang = 'CS'
-ElseIf $locale = "0c04" Or $locale = "0404" Or $locale = "1404" Then
-	$sLang = 'CT'
-ElseIf $locale = "0429" Then
-	$sLang = 'FA'
-Else
-	$sLang = 'EN'
-EndIf
-_langLoad()
+$sLang = _LocaleLanguage($locale)
+_langLoad($resourceIni, $sLang)
 
 ;Detect Archs
 If @CPUArch == 'X64' Then
 	$cpuArch = '64bit'
-	$supportedLbl_msg = '1'
 Else
 	$cpuArch = '32bit'
-	$supportedLbl_msg = '2'
 EndIf
 $osArch = @OSArch
 
@@ -136,10 +140,11 @@ EndFunc
 
 Opt("GUIOnEventMode", 1) ;For multi GUI functions
 
-If FileExists(@TempDir&'\lmcpuv.jpg') Then FileSetAttrib(@TempDir&'\lmcpuv.jpg', '-R-A-S-H')
-FileInstall('resources\stripe.jpg',@TempDir&'\lmcpuv.jpg',1)
-
 _mainGui()
+
+Func _CleanupResources()
+	DirRemove($resourceDir, 1)
+EndFunc
 
 Func _mainGui()
 	#Region ### START Koda GUI section ### Form=C:\vtid-006.kxf
@@ -160,7 +165,7 @@ Func _mainGui()
 	GUICtrlSetColor(Default, 0xffffff)
 	GUICtrlSetFont(-1, 9, 400, 0, "Tahoma")
 	$infoGrp = XSkinGroup("", 8, 85, 345, 25, 0x3e3d3d)
-	$infoCoverLbl = GuiCtrlCreateIcon(@TempDir&'\CPU-V.dll', 3, 13, 95, 10, 10)
+	$infoCoverLbl = GuiCtrlCreateIcon($resourceDll, 3, 13, 95, 10, 10)
 	;$infoCoverLbl = GUICtrlCreateLabel("", 13, 95, 10, 10)
 	GUICtrlSetState(-1, $GUI_ONTOP+$GUI_FOCUS)
 	GUICtrlSetOnEvent(-1, "_onBtn")
@@ -186,7 +191,7 @@ Func _mainGui()
 		GUICtrlCreateLabel('?', 57, 250, 70, 70, $SS_CENTER)
 		GUICtrlSetFont(-1, 35, 600, 0, 'Tahoma')
 	Else
-		GUICtrlCreateIcon(@TempDir&'\CPU-V.dll', $supportedLbl_msg, 57, 250, 70, 70)
+		GUICtrlCreateIcon($resourceDll, $supportedLbl_msg, 57, 250, 70, 70)
 	EndIf
 	;GUICtrlCreateGroup("", -99, -99, 1, 1)
 	$enabledGrp = XSkinGroup($vt&" Enabled", 184, 226, 169, 105, 0x3e3d3d)
@@ -195,7 +200,7 @@ Func _mainGui()
 		GUICtrlCreateLabel('?', 233, 250, 70, 70, $SS_CENTER)
 		GUICtrlSetFont(-1, 35, 600, 0, 'Tahoma')
 	Else
-		GUICtrlCreateIcon(@TempDir&'\CPU-V.dll', $enabledLbl_msg, 233, 250, 70, 70)
+		GUICtrlCreateIcon($resourceDll, $enabledLbl_msg, 233, 250, 70, 70)
 	EndIf
 	;GUICtrlCreateGroup("", -99, -99, 1, 1)
 	$depLbl = GUICtrlCreateLabel($depSym&' Data Execution Prevention (DEP)', 8, 336, 345, 18, $SS_LEFT)
@@ -228,29 +233,6 @@ Func _onBtn()
 		Case $copyrightLbl
 			ShellExecute('http://leomoon.com')
 	EndSwitch
-EndFunc
-
-Func _langLoad()
-	$yy_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Hardware Virtualization is supported, and is ENABLED.", "")
-	$nn_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Hardware Virtualization is NOT supported.", "")
-	$yn_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Hardware Virtualization is supported, but is DISABLED.", "")
-	$yyb_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Hardware Virtualization is supported, but Trusted Execution is ENABLED.", "")
-	$wrong_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Something went terribly wrong! Please check www.LeoMoon.com for more info.", "")
-	$osNoSupported_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Your operating system is not supported. Please check www.LeoMoon.com for more info.", "")
-	$cpuNotSupported_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "LeoMoon CPU-V only supports Intel, AMD or VIA CPUs.", "")
-	$tip01_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Virtualization Technology Benefits:", "")
-	$tip02_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Enables VMMs to run 64-bit guest OSs.", "")
-	$tip03_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Enables Virtual PC with Windows XP Mode in Windows 7.", "")
-	$tip04_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Microsoft later released an update with KB977206", "")
-	$tip05_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "that allows XP-Mode to work without Virtualization.", "")
-	$tip06_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Enabling Virtualization will improve performance of", "")
-	$tip07_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "applications running in virtual machines.", "")
-	$tip_txt = $tip01_txt&@LF&@LF&$tip02_txt&@LF&$tip03_txt&@LF&@LF&$tip04_txt&@LF&$tip05_txt&@LF&@LF&$tip06_txt&@LF&$tip07_txt
-	$cpuArch_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "CPU Architecture", "")
-	$osArch_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "OS Architecture", "")
-	$supported_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Supported", "")
-	$enabled_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Enabled", "")
-	$oops_txt = IniRead(@TempDir&'\CPU-V.ini', $sLang, "Oops!", "")
 EndFunc
 
 Func _langSet()
