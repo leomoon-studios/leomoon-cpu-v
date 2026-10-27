@@ -29,74 +29,10 @@
 #include <EditConstants.au3>
 #include <GDIPlus.au3>
 #include <misc.au3>
-;cpu name
-#include <Memory.au3>
 ;local includes
 #include <resources\ResourcesEx.au3>
 
 $override = 0
-
-Global $pRemoteCode = _MemVirtualAlloc(0, 512, $MEM_COMMIT, $PAGE_EXECUTE_READWRITE)
-Global $tCodeBuffer = DllStructCreate("byte[512]", $pRemoteCode)
-Global $tBuffer = DllStructCreate("char[12]")
-Global $pBuffer = DllStructGetPtr($tBuffer)
-DllStructSetData($tCodeBuffer, 1, _
-		"0x" & _
-		"" & _; 10. SET eax AND CALL
-		"B8" & SwapEndian(0) & _								 ; mov eax, 0
-		"0FA2" & _											   ; cpuid
-		"" & _ ; 20. ARRANGE DATA
-		"891D" & SwapEndian($pBuffer) & _						; mov dword[$pBuffer], ebx
-		"8915" & SwapEndian($pBuffer + 4) & _					; mov dword[$pBuffer + 4], edx
-		"890D" & SwapEndian($pBuffer + 8) & _					; mov dword[$pBuffer + 8], ecx
-		"" & _ ; 30. RETURN
-		"C3" _
-		)
-$iRet = _RunAtAddress($pRemoteCode)
-$tBuffer = DllStructCreate("char[48]")
-$pBuffer = DllStructGetPtr($tBuffer)
-DllStructSetData($tCodeBuffer, 1, _
-		"0x" & _
-		"" & _ ; 10. SET eax AND CALL
-		"B8" & SwapEndian(0x80000002) & _						; mov eax, 0x80000002
-		"0FA2" & _												; cpuid
-		"" & _ ; 20. ARRANGE DATA
-		"A3" & SwapEndian($pBuffer) & _							; mov dword[$pBuffer], eax
-		"891D" & SwapEndian($pBuffer + 4) & _					; mov dword[$pBuffer + 4], ebx
-		"890D" & SwapEndian($pBuffer + 8) & _					; mov dword[$pBuffer + 8], ecx
-		"8915" & SwapEndian($pBuffer + 12) & _					; mov dword[$pBuffer + 12], edx
-		"" & _ ; 30. SET eax AND CALL
-		"B8" & SwapEndian(0x80000003) & _						; mov eax, 0x80000003
-		"0FA2" & _												; cpuid
-		"" & _ ; 40. ARRANGE DATA
-		"A3" & SwapEndian($pBuffer + 16) & _					; mov dword[$pBuffer + 16], eax
-		"891D" & SwapEndian($pBuffer + 20) & _					; mov dword[$pBuffer + 20], ebx
-		"890D" & SwapEndian($pBuffer + 24) & _					; mov dword[$pBuffer + 24], ecx
-		"8915" & SwapEndian($pBuffer + 28) & _					; mov dword[$pBuffer + 28], edx
-		"" & _ ; 50. SET eax AND CALL
-		"B8" & SwapEndian(0x80000004) & _						; mov eax, 0x80000004
-		"0FA2" & _												; cpuid
-		"" & _ ; 60. ARRANGE DATA
-		"A3" & SwapEndian($pBuffer + 32) & _					; mov dword[$pBuffer + 32], eax
-		"891D" & SwapEndian($pBuffer + 36) & _					; mov dword[$pBuffer + 36], ebx
-		"890D" & SwapEndian($pBuffer + 40) & _					; mov dword[$pBuffer + 40], ecx
-		"8915" & SwapEndian($pBuffer + 44) & _					; mov dword[$pBuffer + 44], edx
-		"" & _ ; 70. RETURN
-		"C3" _
-		)
-$iRet = _RunAtAddress($pRemoteCode)
-Func _RunAtAddress($pCode)
-	Local $aCall = DllCall("user32.dll", "dword_ptr", "CallWindowProcW", "ptr", $pCode, "ptr", 0, "dword", 0, "wparam", 0, "lparam", 0)
-	If @error Then Return SetError(1, 0, 0)
-	Return $aCall[0]
-EndFunc   ;==>_RunAtAddress
-Func SwapEndian($iValue, $iSize = 0)
-	If $iSize Then
-		Local $sPadd = "00000000"
-		Return Hex(BinaryMid($iValue, 1, $iSize)) & StringLeft($sPadd, 2 * ($iSize - BinaryLen($iValue)))
-	EndIf
-	Return Hex(Binary($iValue))
-EndFunc   ;==>SwapEndian
 
 Global $virt, $slat, $vmme
 Global $copyrightLbl, $mainFrm, $infoFrm, $appName = 'LeoMoon CPU-V', $appVer = '2.0.5'
@@ -106,9 +42,26 @@ Global $enabledGrp, $tip_txt, $cpuGrp, $depLbl, $slatLbl, $vmmeLbl
 Global $yy_txt, $nn_txt, $yn_txt, $yyb_txt, $wrong_txt, $osNoSupported_txt, $cpuNotSupported_txt
 Global $tip01_txt, $tip02_txt, $tip03_txt, $tip04_txt, $tip05_txt, $tip06_txt, $tip07_txt
 Global $cpuArch_txt, $osArch_txt, $supported_txt, $enabled_txt, $oops_txt
-Global $cpuName = 'x', $exitCode = '0'
+Global $cpuName = 'Unknown CPU'
 
-$cpuName = StringStripWS(DllStructGetData($tBuffer, 1),4)
+; RtlGetVersion reports the real Windows version without a compatibility manifest.
+Local $tOSVersion = DllStructCreate('dword Size;dword Major;dword Minor;dword Build;dword Platform;wchar ServicePack[128]')
+DllStructSetData($tOSVersion, 'Size', DllStructGetSize($tOSVersion))
+Local $aOSVersion = DllCall('ntdll.dll', 'long', 'RtlGetVersion', 'struct*', $tOSVersion)
+If @error Or Not IsArray($aOSVersion) Then
+	MsgBox(48, $appName, 'Unable to determine the Windows version.')
+	Exit 1
+EndIf
+If $aOSVersion[0] <> 0 Then
+	MsgBox(48, $appName, 'Unable to determine the Windows version.')
+	Exit 1
+EndIf
+Local $iMajorVersion = DllStructGetData($tOSVersion, 'Major')
+Local $iMinorVersion = DllStructGetData($tOSVersion, 'Minor')
+If $iMajorVersion < 6 Or ($iMajorVersion = 6 And $iMinorVersion < 2) Then
+	MsgBox(48, $appName, 'LeoMoon CPU-V requires Windows 8 or later.')
+	Exit 1
+EndIf
 
 ;copy resources
 If FileExists(@TempDir&'\CPU-V.ini') Then FileSetAttrib(@TempDir&'\CPU-V.ini', '-R-A-S-H')
@@ -159,91 +112,37 @@ Else
 EndIf
 $osArch = @OSArch
 
-;load original detection if win_7 or win_vista
-If @OSVersion == 'WIN_7' Or @OSVersion == 'WIN_VISTA' Then
-	;prepare havtool
-	If FileExists(@TempDir&'\detecthav.sys') Then FileSetAttrib(@TempDir&'\detecthav.sys', '-R-A-S-H')
-	If FileExists(@TempDir&'\havtool.exe') Then FileSetAttrib(@TempDir&'\havtool.exe', '-R-A-S-H')
-	If @OSArch == 'X64' Then
-		FileInstall('resources\64\detecthav.sys',@TempDir&'\detecthav.sys',1)
-		FileInstall('resources\64\havtool.exe',@TempDir&'\havtool.exe',1)
-		$exitCode = RunWait(@TempDir&'\havtool.exe /q')
-		FileDelete(@TempDir&'\detecthav.sys')
-		FileDelete(@TempDir&'\havtool.exe')
-	ElseIf @OSArch == 'X86' Then
-		FileInstall('resources\32\detecthav.sys',@TempDir&'\detecthav.sys',1)
-		FileInstall('resources\32\havtool.exe',@TempDir&'\havtool.exe',1)
-		$exitCode = RunWait(@TempDir&'\havtool.exe /q')
-		FileDelete(@TempDir&'\detecthav.sys')
-		FileDelete(@TempDir&'\havtool.exe')
-	EndIf
-	;change ui message
-	If $exitCode == '0' Then
-		$info = $yy_txt
-		$supportedLbl_msg = '1'
-		$enabledLbl_msg = '1'
-	ElseIf $exitCode == '1' Then
-		$info = $nn_txt
-		$supportedLbl_msg = '2'
-		$enabledLbl_msg = '2'
-	ElseIf $exitCode == '2' Then
-		$info = $yn_txt
-		$supportedLbl_msg = '1'
-		$enabledLbl_msg = '2'
-	ElseIf $exitCode == '3' Then
-		$info = $yyb_txt
-		$supportedLbl_msg = '1'
-		$enabledLbl_msg = '1'
-	ElseIf $exitCode == '-1' Then
-		MsgBox(0+48+4096, $oops_txt, $wrong_txt)
-		Exit
-	ElseIf $exitCode == '-2' Then
-		MsgBox(0+48+4096, $oops_txt, $osNoSupported_txt)
-		Exit
-	ElseIf $exitCode == '-3' Then
-		MsgBox(0+48+4096, $oops_txt, $cpuNotSupported_txt)
-		Exit
-	Else
-		$info = $nn_txt
-		$supportedLbl_msg = '2'
-		$enabledLbl_msg = '2'
-	EndIf
-Else
-	;get cpu name, virt, vmme, slat
-	Local $objWMI, $strWMI_Query = "", $objWMI_QueryResult, $objWMI_Item, $cpuName, $virt, $vmme, $slat
-	$objWMI = ObjGet('winmgmts:{impersonationLevel=Impersonate}!\\.\root\cimv2')
-	If IsObj($objWMI) Then
-		$strWMI_Query = 'SELECT Name, VirtualizationFirmwareEnabled, VMMonitorModeExtensions, SecondLevelAddressTranslationExtensions FROM Win32_Processor'
-		$objWMI_QueryResult = $objWMI.ExecQuery($strWMI_Query, 'WQL')
+; Get the CPU name and virtualization properties from WMI.
+$objWMI = ObjGet('winmgmts:{impersonationLevel=Impersonate}!\\.\root\cimv2')
+If IsObj($objWMI) Then
+	$strWMI_Query = 'SELECT Name, VirtualizationFirmwareEnabled, VMMonitorModeExtensions, SecondLevelAddressTranslationExtensions FROM Win32_Processor'
+	$objWMI_QueryResult = $objWMI.ExecQuery($strWMI_Query, 'WQL')
+	If IsObj($objWMI_QueryResult) Then
 		For $objWMI_Item In $objWMI_QueryResult
-			$cpuName = $objWMI_Item.Name
+			If IsString($objWMI_Item.Name) And StringStripWS($objWMI_Item.Name, 3) <> '' Then $cpuName = StringStripWS($objWMI_Item.Name, 3)
 			$virt = $objWMI_Item.VirtualizationFirmwareEnabled
 			$vmme = $objWMI_Item.VMMonitorModeExtensions
 			$slat = $objWMI_Item.SecondLevelAddressTranslationExtensions
 		Next
-		$objWMI = 0
-		$objWMI_QueryResult = 0
-		$objWMI_Item = 0
 	EndIf
+	$objWMI = 0
+	$objWMI_QueryResult = 0
+	$objWMI_Item = 0
+EndIf
 
-	;change ui message
-	If @CPUArch == 'X64' And $virt == 'True' Then
-		$info = $yy_txt
-		$supportedLbl_msg = '1'
-		$enabledLbl_msg = '1'
-	ElseIf @CPUArch == 'X64' And $virt == 'False' Then
-		$info = $yn_txt
-		$supportedLbl_msg = '1'
-		$enabledLbl_msg = '2'
-	ElseIf @CPUArch == 'X86' And $virt == 'False' Then
-		$info = $nn_txt
-		$supportedLbl_msg = '2'
-		$enabledLbl_msg = '2'
-	Else
-		$info = $nn_txt
-		$supportedLbl_msg = '2'
-		$enabledLbl_msg = '2'
-	EndIf
+; Change UI message.
+If @CPUArch == 'X64' And $virt == 'True' Then
+	$info = $yy_txt
+	$supportedLbl_msg = '1'
+	$enabledLbl_msg = '1'
+ElseIf @CPUArch == 'X64' And $virt == 'False' Then
+	$info = $yn_txt
+	$supportedLbl_msg = '1'
+	$enabledLbl_msg = '2'
+Else
+	$info = $nn_txt
+	$supportedLbl_msg = '2'
+	$enabledLbl_msg = '2'
 EndIf
 
 ;####################################################################
@@ -305,7 +204,6 @@ Func _mainGui()
 	$bannerPic = GUICtrlCreatePic('', 0, 0, 362, 80)
 	_Resource_SetToCtrlID($bannerPic, "stripe")
 	GUISetOnEvent($GUI_EVENT_CLOSE, "_onBtn")
-	;$cpuNameLbl = GUICtrlCreateLabel(StringStripWS(DllStructGetData($tBuffer, 1),4), 102, 25, 270, 18)
 	$appLbl	= GUICtrlCreateLabel($appname, 93, 24-6, 182, 25)
 	GUICtrlSetBkColor(Default, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetFont(-1, 13, 800, 0, "Tahoma")
@@ -361,10 +259,6 @@ Func _mainGui()
 	GUICtrlSetOnEvent(-1, "_onBtn")
 	GUICtrlSetCursor(-1, 0)
 	GUISetState(@SW_SHOW)
-	If @OSVersion == 'WIN_7' Then ;hide unsupported fields if windows 7
-		GUICtrlSetState($slatLbl, $GUI_DISABLE)
-		GUICtrlSetState($vmmeLbl, $GUI_DISABLE)
-	EndIf
 	_langSet()
 
 	#EndRegion ### END Koda GUI section ###
