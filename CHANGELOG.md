@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1 - 2026-10-29
+
+- Improved high-DPI scaling for the Settings window.
+
 ## 3.0.0 - 2026-10-27
 
 - Updated minimum supported Windows version to Windows 8 and removed the legacy detection driver used on Windows Vista and 7.
