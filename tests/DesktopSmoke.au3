@@ -29,6 +29,19 @@ If Not $hWindow Then
 	Exit 1
 EndIf
 Sleep(1000)
+; GDI-scaled awareness is available on Windows 10 version 1809 and later.
+Local $aContext = DllCall('user32.dll', 'handle', 'GetWindowDpiAwarenessContext', 'hwnd', $hWindow)
+If Number(@OSBuild) >= 17763 And Not @error And IsArray($aContext) And $aContext[0] Then
+	Local $aMatch = DllCall('user32.dll', 'bool', 'AreDpiAwarenessContextsEqual', 'handle', $aContext[0], 'ptr', -5)
+	If Not @error And IsArray($aMatch) Then
+		If Not $aMatch[0] Then
+			ConsoleWrite('FAIL: window is not using GDI scaling' & @CRLF)
+			WinClose($hWindow)
+			Exit 1
+		EndIf
+		ConsoleWrite('Window uses GDI scaling.' & @CRLF)
+	EndIf
+EndIf
 ConsoleWrite('Window text:' & @CRLF & WinGetText($hWindow) & @CRLF)
 Local $sText = WinGetText($hWindow)
 If Not StringInStr($sText, $APP_TITLE) Or Not StringInStr($sText, 'v' & $sExpectedVersion) Then

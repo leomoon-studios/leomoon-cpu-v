@@ -36,13 +36,16 @@
 #include "core\CpuProbe.au3"
 #include "core\Localization.au3"
 #include "core\AppInfo.au3"
+#include "core\Dpi.au3"
 Global $copyrightLbl, $mainFrm, $appName = $APP_TITLE, $appVer = $APP_VERSION
-Global $infoCoverLbl, $hImage, $hImage2, $hImage3, $hGraphic, $cpuGrp, $osGrp, $supportedGrp
+Global $hImage, $hImage2, $hImage3, $hGraphic, $cpuGrp, $osGrp, $supportedGrp
 Global $enabledGrp, $depLbl, $slatLbl, $vmmeLbl
 Global $bannerPic, $appLbl, $verLbl, $infoGrp, $infoLbl, $cpuLbl, $osLbl
 Global $cpuArch, $osArch, $sLang
 
 Global $cpuName = 'Unknown CPU'
+
+_EnableGdiScaling()
 
 ; RtlGetVersion reports the real Windows version without a compatibility manifest.
 Local $tOSVersion = DllStructCreate('dword Size;dword Major;dword Minor;dword Build;dword Platform;wchar ServicePack[128]')
@@ -162,12 +165,7 @@ Func _mainGui()
 	GUICtrlSetColor(Default, 0xffffff)
 	GUICtrlSetFont(-1, 9, 400, 0, "Tahoma")
 	$infoGrp = XSkinGroup("", 8, 85, 345, 25, 0x3e3d3d)
-	$infoCoverLbl = GuiCtrlCreateIcon($resourceDll, 3, 13, 95, 10, 10)
-	;$infoCoverLbl = GUICtrlCreateLabel("", 13, 95, 10, 10)
-	GUICtrlSetState(-1, $GUI_ONTOP+$GUI_FOCUS)
-	GUICtrlSetOnEvent(-1, "_onBtn")
-	;GUICtrlSetCursor(-1, 0)
-	$infoLbl = GUICtrlCreateLabel($info, 26, 93, 345, 15)
+	$infoLbl = GUICtrlCreateLabel($info, 13, 93, 338, 15)
 	GUICtrlSetBkColor(Default, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetFont(-1, 8, 400, 0, "Tahoma")
 	$cpuGrp = XSkinGroup("CPU Architecture", 8, 116, 169, 105, 0x3e3d3d)
@@ -237,7 +235,7 @@ Func _langSet()
 	GUICtrlSetData($osGrp,$osArch_txt)
 	GUICtrlSetData($supportedGrp,$vt&' '&$supported_txt)
 	GUICtrlSetData($enabledGrp,$vt&' '&$enabled_txt)
-	GUICtrlSetTip($infoCoverLbl,$tip_txt)
+	GUICtrlSetTip($infoLbl,$tip_txt)
 	;_TipDisplayLen()
 EndFunc
 
